@@ -1,0 +1,10 @@
+seat,architecture,test_median_pct,imode_pct,mask_pct,wall_s_per_star,speedup_vs_exact,note
+exact solver,,0.0,,,574,1,the apparatus; 90th percentile 1767 s
+C1 theta->EOS curve,d4_w512_p0.1_silu,0.85,,,539,1.06,"exact star+modes after a learned EOS; error is on eps(P), not on frequencies"
+C5 theta->solved star,d4_w512_p0.1_silu,0.91,,,433,1.33,"exact modes after a learned star; error on M,R,Rcc,Mmax+curve"
+"C6 six EOS curves+M,n_t1->spectrum (MLP)",d2_w512_p0.2_silu (5 seeds),9.82,28.6,96.1,35,16.4,seed sd 1.39 pt; a LayerNorm variant is stable at 11.29+-0.17
+C6 (DENSE),k7-k3-zero-zero (6 ch),19.5,38.7,86.9,35,16.4,unstable across seeds (16-21%)
+C3 solved star->spectrum (MLP),d3_w512_p0.2_silu (5 seeds),4.73,32.3,97.5,141,4.07,best learned spectrum; closed at 5 seeds (+-0.09)
+"C3 (DENSE 6-slot, all-zero)",stem conv+FC,5.13,35,97.2,141,4.07,local receptive stem only
+C2 theta->spectrum one shot,d4_w256_p0.2_gelu,6.88,30.5,97.1,4e-06,1.44e+08,closed: 3 winners within 0.17 pt
+C4 warm start (root polish),C2 ensemble proposals,0.0,,,216,2.66,projected from the measured per-evaluation cost (0.28 s): 33 proposals x 8 evals + 141 s prefix + i-mode reconstruction; labels from the proposal slot; exact for the 84.6% of roots captured; 9.4% never proposed
