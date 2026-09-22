@@ -1,11 +1,11 @@
 # ============================================================
-# NEILL / NEWTON 2026 FORWARD MODEL PARITY SOLVER
+# Forward model: ten nuclear parameters to a labelled mode spectrum
 # EOS -> target-mass TOV -> relativistic Cowling elastic modes
 #
 # Scientific target:
-#   Neill et al. (2026), arXiv:2606.09621, as documented in the
-#   dissertation forward-model chapter v22 (Sept 2026) and the
-#   Yoshida & Lee (2002) relativistic-Cowling elastic equations.
+#   Neill et al. (2026), arXiv:2606.09621, as described in the
+#   dissertation's forward-model chapter, and the Yoshida & Lee (2002)
+#   relativistic-Cowling elastic equations.
 #
 # Main API:
 #   result = forward_model(
@@ -13,7 +13,7 @@
 #       plots=True, solve_modes=True,
 #   )
 #
-# Important design choices (v22-doc parity):
+# Design choices, following the reference pipeline:
 #   * ONE CLDM cell describes the crust from the table floor at
 #     n = 1e-5 fm^-3 to n_cc.  Nothing is attached below drip; the
 #     BPS 1971 table is carried as a DIAGNOSTIC check only
@@ -26,14 +26,14 @@
 #     reported as the extrapolation-error diagnostic.
 #   * inner-core family priors/forms follow the 2026 supplement;
 #     family 5 imposes VALUE-only seam continuity (c1 solved) with
-#     c2 sampled, the v22-doc recorded deviation from the source.
+#     c2 sampled; the dissertation records this deviation from the source.
 #   * the EOS is extended until the TOV maximum-mass turnover is
 #     interior to the pressure grid.
 #   * stellar mass is an input; central pressure is inverted.
 #   * family-1 sharp FOPT uses the rapid-conversion fluid junction.
-#   * final root gate is the locked V3 3e-5 singular-ratio AND
+#   * final root gate is the 3e-5 singular-ratio AND
 #     boundary-residual cut on the high-resolution operator.
-#   * the mode band is 10--3000 Hz (v22 doc); i-mode identity is
+#   * the mode band is 10--3000 Hz; i-mode identity is
 #     morphology/topology based; 100--600 Hz is only a soft prior.
 #   * extra unclassified roots never invalidate an otherwise valid star.
 #
@@ -55,7 +55,7 @@ import jax.scipy as jsp
 
 jax.config.update("jax_enable_x64", True)
 
-SOLVER_VERSION = "FULL-SPECTRUM-PARITY-v3.4-WIDE160-LOCALNODES-REJECTS"
+SOLVER_VERSION = "3.4"
 
 _HBARC,_MN,_MP,_ME,_MMU,_E2=197.32698,939.565,938.272,0.511,105.658,1.4400
 _SIGMA_S0,_SIGMA_C0,_BS,_P_SURF,_BETA_C,_ALPHA_C=1.1,0.1,29.9,3.0,0.7,5.5
@@ -118,7 +118,7 @@ def _jax_crust_energy(n,q4,inner,c_snm,c_sym,n_s):
 
 def _jax_crust_bounds(n,inner,n_s):
     qxmin=jnp.log(1e-6/(1-1e-6)); qxmax=jnp.log((_BETA_C-1e-6)/(1-_BETA_C+1e-6))
-    # A cluster is matter sitting near its own saturation point (v22 doc), so the
+    # A cluster is matter sitting near its own saturation point, so the
     # cluster density is bounded on BOTH sides.  The ceiling 2 n_s stops the
     # expansion being read at super-saturation garbage; the floor stops the
     # no-gas OUTER branch collapsing onto a dilute artifact minimum past
@@ -236,7 +236,7 @@ def jax_u18_bisect_kernel(left,right,qleft,c_snm,c_sym,n_s):
     return (lo+hi)/2,qlo,ok
 
 
-# Production crust march (v22 doc): warm-started multistart minimisation at every
+# Production crust march: warm-started multistart minimisation at every
 # grid density, on either branch.  Also returns the drip condition value and the
 # clustered-minus-uniform energy per baryon so drip and the marched crossing can
 # be located on the host without re-solving.
@@ -334,7 +334,7 @@ TOV_TINY = jnp.asarray(1e-300, dtype=jnp.float64)
 
 # EOS grids.  The high-density ceiling is extended dynamically.
 N_OUTER_CRUST = 160
-OUTER_N_MIN = 1.0e-5   # fm^-3; the v22-doc table floor
+OUTER_N_MIN = 1.0e-5   # fm^-3; the table floor
 OUTER_N_MAX = 6.0e-4   # fm^-3; must contain neutron drip (2.0--3.5e-4 band)
 N_CLDM = 520
 N_OUTER_CORE = 420
@@ -349,7 +349,7 @@ MMAX_EXTEND_FACTOR = 1.45
 MMAX_MAX_N = 6.0  # fm^-3, numerical emergency ceiling, not a sampled prior.
 MASS_TOL_MSUN = 2.0e-5
 
-# Mode controls: locked V3 high-resolution path.
+# Mode controls: high-resolution path.
 N_SCAN_CORE_LOG = 161
 N_SCAN_CORE_RAD = 700
 N_SCAN_CRUST = 360
@@ -402,7 +402,7 @@ def enable_persistent_jax_cache(path: str) -> None:
 
 
 # ============================================================
-# BPS 1971 outer crust -- DIAGNOSTIC REFERENCE ONLY (v22 doc).
+# BPS 1971 outer crust -- DIAGNOSTIC REFERENCE ONLY.
 # The production crust is the CLDM cell from the table floor to n_cc.
 # These rows exist to check the computed drip density and the Gamma1
 # plateau, and for the comparison plot.  They never enter the EOS table.
@@ -475,7 +475,7 @@ def validate_inner_params(family: int, inner: np.ndarray, nt1: float) -> np.ndar
         if not (nt1 < p[0] < p[1] < p[2] < 0.80 and np.all((p[3:] > 0) & (p[3:] < 1))):
             raise ValueError("F4 outside source bounds/order")
     elif family == 5:
-        # v22 doc: value-only seam continuity; c1 is solved, c2 is SAMPLED.
+        # Value-only seam continuity; c1 is solved, c2 is SAMPLED.
         if p.size != 6: raise ValueError("F5 inner = [nBL,nP,wP,hP,sP,c2]; c1 is solved from value continuity")
         nBL,nP,wP,hP,sP,c2 = p
         if not (0.01 < nBL < 3.20 and nt1 < nP < 3.20 and 0.08 < wP < 3.20 and 0 < hP < 1 and -50 < sP < 50):
@@ -512,9 +512,9 @@ def _peak_term(n, nP, wP, hP, sP):
 
 
 def _solve_f5_value(nt1, cs21, pars):
-    """Value-only seam continuity (v22 doc): solve the deficit depth c1 so that
+    """Value-only seam continuity: solve the deficit depth c1 so that
     cs2(nt1) equals the outer-core seam value, with the sampled centre c2.
-    The slope is deliberately NOT matched; the doc records that departure."""
+    The slope is deliberately NOT matched; the dissertation records that departure."""
     nBL,nP,wP,hP,sP,c2 = [jnp.asarray(x,dtype=jnp.float64) for x in pars]
     p0=_peak_term(nt1,nP,wP,hP,sP)
     A=1.0/3.0+p0-cs21
@@ -589,7 +589,7 @@ def _make_inner_parity(family,inner,nt1,nmax,mu1,P1,cs21):
     grid=jnp.sort(jnp.concatenate((base,jnp.asarray(special,dtype=jnp.float64)))) if special else base
     e,P,G,cs2,raw,mu=inner_kernel_parity(grid,jnp.asarray(mu1),jnp.asarray(P1),family,p,jnp.asarray(cs21),jnp.asarray(nt1))
     a=np.asarray(raw)
-    # v22 doc: the only F5 shape rejection is a negative squared sound speed;
+    # The only F5 shape rejection is a negative squared sound speed;
     # causality is patched (min against 1) rather than rejected.
     if not np.all(np.isfinite(a)) or np.nanmin(a)<-1e-8:
         raise ValueError("inner-core sound speed squared became negative/non-finite")
@@ -600,7 +600,7 @@ def _make_inner_parity(family,inner,nt1,nmax,mu1,P1,cs21):
 
 
 # ============================================================
-# Production crust: one CLDM cell from the table floor to n_cc (v22 doc)
+# Production crust: one CLDM cell from the table floor to n_cc
 # ============================================================
 def _solve_cldm_sequence(theta10: np.ndarray):
     """Solve the full production crust on compiled fixed grids.
@@ -615,13 +615,13 @@ def _solve_cldm_sequence(theta10: np.ndarray):
     qguess=jnp.array([jnp.log(n_s),jnp.log(.30/.70),jnp.log(6.0),0.0],dtype=jnp.float64)
 
     # ---- neutron drip from the WITH-gas branch (energy criterion) ----
-    # "The composition is whatever is cheapest" (v22 doc): below drip the
+    # "The composition is whatever is cheapest": below drip the
     # 4-coordinate solve empties its gas (n_g collapses toward the coordinate
     # floor); above drip the converged gas density is real and grows with the
     # BBP square-root cusp.  Drip is the first density where the with-gas cell
     # keeps a genuine gas, detected as n_g > 1e-4 n sustained over three grid
-    # points.  The derivative criterion d eps_cell/dn = m_n (eq. drip of the
-    # doc) is kept as a diagnostic below; the two coincide whenever the no-gas
+    # points.  The derivative criterion d eps_cell/dn = m_n (the drip
+    # equation) is kept as a diagnostic below; the two coincide whenever the no-gas
     # branch keeps its interior minimum up to drip, and the energy route also
     # covers draws where that branch destabilises exactly at drip.
     ndrip=np.nan
@@ -684,7 +684,7 @@ def _solve_cldm_sequence(theta10: np.ndarray):
     ecell,pcell=c18[0]/n18,c18[1]; eunif,punif=core18[0]/n18,core18[1]
     denom=punif-pcell
     if abs(denom)<1e-12: raise ValueError("tangent n_cc denominator is singular")
-    # Sign convention (v22 doc): below the crossing the clusters are CHEAPER
+    # Sign convention: below the crossing the clusters are CHEAPER
     # (ecell<eunif) but carry the LARGER pressure, so numerator and denominator
     # are both negative and the extrapolated shift is positive.  The named
     # rejection is a non-positive shift, not a negative denominator.
@@ -692,7 +692,7 @@ def _solve_cldm_sequence(theta10: np.ndarray):
     if shift<=0: raise ValueError("tangent n_cc has no forward crossing (named rejection)")
     ncc=n18+shift
     if not (n18<ncc<0.16): raise ValueError(f"unphysical tangent n_cc={ncc:.6g}")
-    # Marched true-crossing diagnostic (v22 doc): first density at which the
+    # Marched true-crossing diagnostic: first density at which the
     # clustered energy per baryon meets the uniform one past the pasta onset.
     mc=np.where(good&(u_scan>=1/8)&(diffs>=0))[0]
     if mc.size==0:
@@ -743,7 +743,7 @@ def _solve_cldm_sequence(theta10: np.ndarray):
 def _continue_to_vacuum(cldm: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
     """Continue the crust table below its floor toward P=0.
 
-    The v22 doc: the table floor is 1e-5 fm^-3 and the final interval is
+    The table floor is 1e-5 fm^-3 and the final interval is
     continued to vacuum; it carries negligible mass and exists only so the
     stellar radius converges.  A local power law anchored on the lowest rows
     supplies the continuation; the composition there is frozen at the floor.
@@ -773,10 +773,10 @@ def _enforce_monotone_pressure(crust: Dict[str, np.ndarray], depth_cap: float = 
     Two things produce a locally decreasing tabulated P.  Seam/solver noise
     (parts in 1e4) at branch changes, and, more importantly, the extended
     spherical cell losing mechanical stability inside the pasta band, where
-    the v22 doc carries spherical values and bridges rather than solves.  Both
+    the reference pipeline carries spherical values and bridges rather than solves.  Both
     are handled the same way: rows sitting below the running pressure maximum
-    are dropped, which leaves a flat bridge in P across the dip (the doc
-    explicitly allows dP/dn = 0 stretches, never dP/dn < 0), and the maximum
+    are dropped, which leaves a flat bridge in P across the dip (the reference
+    pipeline explicitly allows dP/dn = 0 stretches, never dP/dn < 0), and the maximum
     relative depth of what was bridged is recorded as P_bridge_depth_max.  A
     dip deeper than depth_cap is no longer bookkeeping and rejects the draw by
     name (the stability guard).
@@ -801,7 +801,7 @@ def _enforce_monotone_pressure(crust: Dict[str, np.ndarray], depth_cap: float = 
 
 
 def parity_checks(cldm: Dict[str, np.ndarray], crust: Dict[str, np.ndarray]) -> Dict[str, float]:
-    """The v22-doc validation numbers, computed on the production crust."""
+    """The validation numbers, computed on the production crust."""
     checks={}
     checks['ndrip_fm3']=float(cldm['ndrip'])
     checks['ndrip_lambda_fm3']=float(cldm.get('ndrip_lambda',np.nan))
@@ -829,7 +829,7 @@ def build_eos(theta10=DEFAULT_THETA, family:int=1, inner=None, nt1:float=0.50, n
     inner=np.asarray(inner,dtype=float); validate_inner_params(family,inner,nt1)
     if nt1<=0: raise ValueError("nt1 must be positive")
 
-    # Cheap guard first (v22 doc guard 1): a non-positive symmetry energy in
+    # Cheap guard first (guard 1): a non-positive symmetry energy in
     # the dynamically relevant band makes the closure multivalued and the crust
     # unbuildable, so reject before the expensive cell solve.  Below 1e-3 fm^-3
     # the damped expansion sends every term to zero and the sign of the
@@ -1623,7 +1623,7 @@ def forward_model(theta10=DEFAULT_THETA,mass_msun:float=1.4,family:int=1,inner=N
         eos=build_eos(theta10,family,inner,nt1,nmax)
         print(f'      n_drip={eos["cldm"]["ndrip"]:.6g}  n_1/8={eos["cldm"]["n18"]:.6g}  n_cc={eos["cldm"]["ncc"]:.6g}  n_cc(marched diag)={eos["cldm"]["ncc_marched"]:.6g}')
         pc=eos['parity']
-        print(f'      v22 parity: drip in 2.0-3.5e-4 band={pc["ndrip_in_band"]}  G1(1e-4)={pc["G1_at_1e-4_fm3"]:.4f} (BPS 1.334, ok={pc["G1_plateau_ok"]})  ncc order ok={pc["ncc_order_ok"]}')
+        print(f'      checks: drip in 2.0-3.5e-4 band={pc["ndrip_in_band"]}  G1(1e-4)={pc["G1_at_1e-4_fm3"]:.4f} (BPS 1.334, ok={pc["G1_plateau_ok"]})  ncc order ok={pc["ncc_order_ok"]}')
         print(f'      EOS build {time.perf_counter()-te:.2f} s', flush=True)
 
         tm=time.perf_counter()
@@ -1715,7 +1715,7 @@ def self_test(verbose=True):
     tests['bps_reference_shape']=bool(len(_BPS_GAMMA_EQ)==43 and abs(BPS_DRIP_FM3-2.572e-4)<1e-7)
     # FOPT rapid map invariant, written algebraically.
     y=np.array([1.2,.7]); vh,vl=4.0,2.0; yo=np.array([y[1]+vh/vl*(y[0]-y[1]),y[1]]); tests['fopt_traction']=bool(abs(vh*(y[0]-y[1])-vl*(yo[0]-yo[1]))<1e-14 and yo[1]==y[1])
-    # F5 VALUE-only continuity on a synthetic seam (v22 doc: slope deliberately free).
+    # F5 VALUE-only continuity on a synthetic seam (slope deliberately free).
     p=np.array([.5,.8,.3,.2,0.,.6]); c1=float(_solve_f5_value(jnp.asarray(.35),jnp.asarray(.45),p)); pack=jnp.array([*p[:5],c1,p[5],0.])
     f0=float(_inner_raw_parity(5,jnp.asarray(.35),jnp.asarray(1.),jnp.asarray(1.),pack,jnp.asarray(.45),jnp.asarray(.35)))
     tests['f5_value_seam']=bool(abs(f0-.45)<1e-10)
@@ -1739,17 +1739,17 @@ def self_test(verbose=True):
 
 
 # ============================================================
-# Batch production for the NN-placement experiment (v22 doc, second half)
+# Batch production for the NN-placement experiment
 # ============================================================
 # Every sample stores ALL intermediate stages, so a surrogate can be trained
 # to replace the pipeline at any cut:
 #   theta -> EOS tables -> TOV background/star profile -> mode spectrum.
 # One .npz per accepted sample; a CSV manifest records every draw, accepted
-# or rejected-by-name, so the prior bookkeeping survives (v22 doc: a
+# or rejected-by-name, so the prior bookkeeping survives (a
 # rejection the inference is not told about silently reweights the prior).
 
 RESOLUTION_TIERS = {
-    # locked V3 production gate
+    # production gate
     'full':     dict(N_SCAN_CORE_LOG=161, N_SCAN_CORE_RAD=700, N_SCAN_CRUST=360,
                      N_EIGEN_CORE_LOG=3001, N_EIGEN_CORE_RAD=11032, N_EIGEN_CRUST=900,
                      N_FREQ=512, N_CANDIDATES=96, N_COARSE_MODES=56, N_MODES=48,
@@ -1946,7 +1946,7 @@ def run_batch(n_samples: int, out_dir: str, seed: int = 0, tier: str = 'training
 
 if __name__ == '__main__':
     import argparse, sys
-    ap = argparse.ArgumentParser(description='Neill/Newton 2026 parity forward model (v22-doc)')
+    ap = argparse.ArgumentParser(description='Forward model: ten nuclear parameters to a labelled mode spectrum')
     ap.add_argument('--batch', type=int, default=0, help='number of samples to produce (0 = run the reference demo star)')
     ap.add_argument('--out', type=str, default='fm3_dataset', help='output directory for batch samples')
     ap.add_argument('--seed', type=int, default=0)

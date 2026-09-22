@@ -19,6 +19,10 @@ The forward model turns ten nuclear parameters into a labelled quadrupolar mode 
 | `surrogates/baselines.py` | slot mean and kernel ridge baselines |
 | `surrogates/count_analysis.py` | mode count and mask diagnostics |
 | `surrogates/train_starter.py` | minimal self contained trainer |
+| `surrogates/seatdata.py` | the data half of `variants.py`, so the classical baselines load the same arrays without JAX |
+| `surrogates/gatekeeper.py` | accept/reject classifier on the prior draws, with a maximum-mass head |
+| `surrogates/ladder.py` | the ladder-parameter target: g modes evenly spaced in period, s modes in frequency, plus the i and f modes |
+| `surrogates/ladder_seat.py` | the ladder target scored against the 182-slot target on the same stars, split and metric |
 | `figures/dataset_figures.py` | dataset figures |
 | `results/` | the numbers behind the dissertation's figures and tables |
 
@@ -43,6 +47,9 @@ Each accepted star is written as one archive holding every stage; every rejected
 ```
 python surrogates/architecture_scan.py results.csv dataset --seat c2
 python surrogates/train_starter.py dataset
+python surrogates/ladder.py ladder.csv dataset --seeds 3
+python surrogates/ladder_seat.py dataset
+python surrogates/gatekeeper.py dataset
 ```
 
 Set `FM3_VARIANTS` to point at `surrogates/variants.py` if the scripts are run from another directory.

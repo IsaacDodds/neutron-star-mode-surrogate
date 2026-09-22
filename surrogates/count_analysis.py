@@ -1,4 +1,4 @@
-# What happens when the one-shot gets "how many modes" wrong. Reads the test-set dumps from fm3_count_diag_hex.py.
+# What happens when the one-shot gets "how many modes" wrong. Reads the test-set dumps (preds_s*.npz) that variants.run writes when given a dump path.
 import numpy as np, glob, collections
 names=["g%d"%k for k in range(1,13)]+["i"]+["s%d"%k for k in range(1,17)]+["f"]
 G=slice(0,12); I=12; S=slice(13,29); Fm=29

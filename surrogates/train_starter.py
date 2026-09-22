@@ -1,7 +1,7 @@
 # ============================================================
 # FM3 NN starter: one-shot surrogate  theta -> mode-slot spectrum
 #
-# First cut of the v22-doc NN-placement experiment.  Trains a masked-MSE
+# First cut of the NN-placement experiment.  Trains a masked-MSE
 # MLP on the fixed ML slot vector (g1..g12, i, s1..s16, f) from the
 # fm3_dataset NPZ samples.  Pure JAX; runs in the Hex fm3env or any venv
 # with jax+numpy.  Split is by draw index, so no leakage between sets.
